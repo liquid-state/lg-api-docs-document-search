@@ -23,90 +23,15 @@ info:
 externalDocs:
   description: Visit the Liquid Gears technical documentation to explore the LG Platform.
   url: 'https://docs.liquid-gears.com'
-tags:
-  - name: Echo
-    description: Example echo operations
-  - name: User
-    description: Operations about user
 servers:
   - url: 'http://example.com/api/v1'
   - url: 'https://example.com/api/v1'
 paths:
-  /echo:
-    post:
-      tags:
-        - Echo
-      summary: Echo test
-      description: Receive the exact message you've sent
-      operationId: echo
-      security:
-        - api_key: []
-        - basic_auth: []
-      responses:
-        '200':
-          description: OK
-          headers:
-            X-Rate-Limit:
-              description: calls per hour allowed by the user
-              schema:
-                type: integer
-                format: int32
-            X-Expires-After:
-              $ref: '#/components/headers/ExpiresAfter'
-          content:
-            application/json:
-              schema:
-                type: string
-              examples:
-                response:
-                  value: Hello world!
-            application/xml:
-              schema:
-                type: string
-            text/csv:
-              schema:
-                type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: string
-              example: Hello world!
-          application/xml:
-            schema:
-              type: string
-              example: Hello world!
-        description: Echo payload
-        required: true
-      x-code-samples:
-        - lang: 'C#'
-          source: |
-            API.v1.Echo echo = new API.v1.Echo();
-            echo.message = "Hello World!");
-            EchoResponse response = echo.post();
-            if (response.statusCode == HttpStatusCode.Created)
-            {
-              // Success
-            }
-            else
-            {
-              // Something wrong -- check response for errors
-              Console.WriteLine(response.getRawResponse());
-            }
-        - lang: PHP
-          source: |
-            $form = new \API\Entities\Echo();
-            $form->setMessage("Hello World!");
-            try {
-                $pet = $client->echo()->post($form);
-            } catch (UnprocessableEntityException $e) {
-                var_dump($e->getErrors());
-            }
   /query:
     get:
       tags:
-        - Query
-      summary: Query
+        - FTS Query
+      summary: /query
       description: Full-text search (FTS) query on the body of Document Pages
       operationId: query
       parameters:
@@ -119,7 +44,7 @@ paths:
           example: abc123
         - name: term
           in: query
-          description: The term to search for
+          description: The term to perform a full-text search for
           required: true
           schema:
             type: string
@@ -134,84 +59,96 @@ paths:
               examples:
                 response:
                   $ref: '#/components/examples/ResultList'
-  '/users/{username}':
-    parameters:
-      - name: pretty_print
-        in: query
-        description: Pretty print response
-        schema:
-          type: boolean
+      x-code-samples:
+        - lang: Python
+          source: |
+            API.v1.Echo echo = new API.v1.Echo();
+            echo.message = "Hello World!");
+            EchoResponse response = echo.post();
+            if (response.statusCode == HttpStatusCode.Created)
+            {
+              // Success
+            }
+            else
+            {
+              // Something wrong -- check response for errors
+              Console.WriteLine(response.getRawResponse());
+            }
+  /query/data:
     get:
       tags:
-        - User
-      summary: Get user by user name
-      description: |
-        Some description of the operation. 
-        You can use `markdown` here.
-      operationId: getUserByName
+        - Metadata Query
+      summary: /query/data
+      description: Query the Document Pages JSON metadata
+      operationId: query-data
       parameters:
-        - name: username
-          in: path
-          description: The name that needs to be fetched
+        - name: app
+          in: query
+          description: The token of the app results should be obtained from
           required: true
           schema:
             type: string
-        - name: with_email
+          example: abc123
+        - name: search
           in: query
-          description: Filter users without email
+          description: |
+            URL-encoded JSON description of metadata search rules
+
+            Both the Documents and Document Pages metadata can be searched by specifying a 
+            JSON object describing the Document and Document Pages to match.
+
+            ```json
+              [
+                {
+                    "document": {
+                        "selectAll": false,
+                        "isOperatorOr": false,
+                        "rules": [
+                            {
+                                "predicate": "tags",
+                                "operator": "contains",
+                                "values": {
+                                    "default": "tag 1"
+                                }
+                            }
+                        ]
+                    },
+                    "page": {
+                        "selectAll": false,
+                        "isOperatorOr": true,
+                        "rules": [
+                            {
+                                "predicate": "tags",
+                                "operator": "contains",
+                                "values": {
+                                    "default": "tag 1"
+                                }
+                            },
+                            {
+                                "predicate": "tags",
+                                "operator": "contains",
+                                "values": {
+                                    "default": "tag 2"
+                                }
+                            }
+                        ]
+                    }
+                }
+              ]
+            ```
+          required: true
           schema:
-            type: boolean
-      security:
-        - main_auth:
-            - 'read:users'
-        - api_key: []
+            type: string
       responses:
         '200':
-          description: Success
+          description: OK - Returns search results as JSON
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-              example:
-                username: user1
-                email: user@example.com
-        '403':
-          description: Forbidden
-        '404':
-          description: User not found
-    put:
-      tags:
-        - User
-      summary: Updated user
-      description: This can only be done by the logged in user.
-      operationId: updateUser
-      parameters:
-        - name: username
-          in: path
-          description: The name that needs to be updated
-          required: true
-          schema:
-            type: string
-      security:
-        - main_auth:
-            - 'write:users'
-      responses:
-        '200':
-          description: OK
-        '400':
-          description: Invalid user supplied
-        '404':
-          description: User not found
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/User'
-        description: Updated user object
-        required: true
+                type: object
+              examples:
+                response:
+                  $ref: '#/components/examples/ResultList'
 components:
   schemas:
     Email:
@@ -248,6 +185,10 @@ components:
             slug: page 1
             title: Page 1
             source_url: 'https://cms-domain-slug.s3.amazonaws.com/c/COMPANY_TOKEN/apps/APP_TOKEN/issues/ISSUE_TOKEN/versions/1/published/0001-PAGE_TOKEN-PAGE-SLUG/index.html'
+            metadata:
+              tags:
+                - term: tag 1
+                  label: tag 1
             rank: 1
             doc_id: com.company.app.document-token
             search_type: title
@@ -255,6 +196,10 @@ components:
             slug: page 2
             title: Page 2
             source_url: 'https://cms-domain-slug.s3.amazonaws.com/c/COMPANY_TOKEN/apps/APP_TOKEN/issues/ISSUE_TOKEN/versions/1/published/0001-PAGE_TOKEN-PAGE-SLUG/index.html'
+            metadata:
+              tags:
+                - term: tag 2
+                  label: tag 2
             rank: 2
             doc_id: com.company.app.document-token
             search_type: title
