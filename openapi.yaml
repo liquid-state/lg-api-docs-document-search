@@ -2,7 +2,6 @@ openapi: 3.0.0
 info:
   version: 1.0.0
   title: Liquid Gears Document Search API
-  termsOfService: 'https://example.com/terms/'
   contact:
     email: info@liquid-state.com
     url: 'https://liquid-gears.com'
@@ -12,20 +11,15 @@ info:
   x-logo:
     url: ./logo.png
   description: |
-    This is an **example** API to demonstrate features of OpenAPI specification
+    This API is used to query Documents and Document Pages published by Ubiquity Dashboard  and indexed by the Document Search service.
     # Introduction
-    This specification is intended to to be a good starting point for describing your API in 
-    [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
-    It also demonstrates features of [generator-openapi-repo](https://github.com/Rebilly/generator-openapi-repo) tool and 
-    [ReDoc](https://github.com/Rebilly/ReDoc) documentation engine. So beyond the standard OpenAPI syntax we use a few 
-    [vendor extensions](https://github.com/Rebilly/ReDoc/blob/master/docs/redoc-vendor-extensions.md).
+    When publishing a Document in Ubiquity Dashboard, the Document Search backend service  asynchronously indexes the Document Pages. The body of a Document Page is turned into plain text which gets indexed. The metadata of a Document Page is also stored and indexed.
 
-    # OpenAPI Specification
-    The goal of The OpenAPI Specification is to define a standard, language-agnostic interface to REST APIs which
-    allows both humans and computers to discover and understand the capabilities of the service without access to source
-    code, documentation, or through network traffic inspection. When properly defined via OpenAPI, a consumer can 
-    understand and interact with the remote service with a minimal amount of implementation logic. Similar to what
-    interfaces have done for lower-level programming, OpenAPI removes the guesswork in calling the service.
+      Using this API, you can query the indexed Document Pages in two ways:
+      * Full Text Search (FTS) on the body of the Document Page
+      * JSON search on the metadata of a Document Page
+
+    As of now, both types of searches cannot be combined.
 externalDocs:
   description: Visit the Liquid Gears technical documentation to explore the LG Platform.
   url: 'https://docs.liquid-gears.com'
@@ -108,6 +102,38 @@ paths:
             } catch (UnprocessableEntityException $e) {
                 var_dump($e->getErrors());
             }
+  /query:
+    get:
+      tags:
+        - Query
+      summary: Query
+      description: Full-text search (FTS) query on the body of Document Pages
+      operationId: query
+      parameters:
+        - name: app
+          in: query
+          description: The token of the app results should be obtained from
+          required: true
+          schema:
+            type: string
+          example: abc123
+        - name: term
+          in: query
+          description: The term to search for
+          required: true
+          schema:
+            type: string
+          example: test
+      responses:
+        '200':
+          description: OK - Returns search results as JSON
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                response:
+                  $ref: '#/components/examples/ResultList'
   '/users/{username}':
     parameters:
       - name: pretty_print
@@ -213,6 +239,25 @@ components:
           example: Smith
         email:
           $ref: '#/components/schemas/Email'
+  examples:
+    ResultList:
+      summary: Result list
+      value:
+        results:
+          - pk: 1
+            slug: page 1
+            title: Page 1
+            source_url: 'https://cms-domain-slug.s3.amazonaws.com/c/COMPANY_TOKEN/apps/APP_TOKEN/issues/ISSUE_TOKEN/versions/1/published/0001-PAGE_TOKEN-PAGE-SLUG/index.html'
+            rank: 1
+            doc_id: com.company.app.document-token
+            search_type: title
+          - pk: 2
+            slug: page 2
+            title: Page 2
+            source_url: 'https://cms-domain-slug.s3.amazonaws.com/c/COMPANY_TOKEN/apps/APP_TOKEN/issues/ISSUE_TOKEN/versions/1/published/0001-PAGE_TOKEN-PAGE-SLUG/index.html'
+            rank: 2
+            doc_id: com.company.app.document-token
+            search_type: title
   headers:
     ExpiresAfter:
       description: date in UTC when token expires
